@@ -1,0 +1,18 @@
+{
+    "name": "@inkstone/core",
+    "version": "0.0.0",
+    "description": "",
+    "main": "index.js",
+    "module": "dist/core.es.js",
+    "buildOptions": {
+      "name": "Core",
+      "formats": [
+        "es",
+        "cjs",
+        "iife"
+      ]
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC"
+  }

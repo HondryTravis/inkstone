@@ -1,0 +1,15 @@
+{
+  "name": "inkstone",
+  "version": "1.0.0",
+  "main": "index.js",
+  "description": "simple rich text editor, easy to extend. Built with TypeScript",
+  "license": "MIT",
+  "buildOptions": {
+    "name": "Ink",
+    "formats": [
+      "es",
+      "cjs",
+      "iife"
+    ]
+  }
+}
