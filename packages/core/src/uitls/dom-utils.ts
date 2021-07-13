@@ -298,7 +298,7 @@ export function isVisible(node) {
     }
 
     if (isBlockNode(node)
-    || (node.nodeType == Node.TEXT_NODE&& !isCollapsedWhitespaceNode(node))
+    || (node.nodeType == Node.TEXT_NODE && !isCollapsedWhitespaceNode(node))
     || isHtmlElement(node, 'img')
     || (isHtmlElement(node, 'br') && !isExtraneousLineBreak(node))) {
         return true
@@ -411,9 +411,7 @@ export function isDescendant(descendant, ancestor) {
 }
 
 export function isBefore(node1, node2) {
-    return Boolean(
-        node1.compareDocumentPosition(node2) & Node.DOCUMENT_POSITION_FOLLOWING
-    )
+    return Boolean(node1.compareDocumentPosition(node2) & Node.DOCUMENT_POSITION_FOLLOWING)
 }
 
 export function isAfter(node1, node2) {
