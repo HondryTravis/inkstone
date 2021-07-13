@@ -56,59 +56,45 @@ export function isProhibitedParagraphChild(node) {
 
 export function isBlockNode(node: HTMLElement) {
     const inlineProps = ['inline', 'inline-block', 'inline-table', 'none']
-    return (
-        node &&
-        ((node.nodeType == Node.ELEMENT_NODE &&
-            inlineProps.indexOf(getComputedStyle(node).display) == -1) ||
-            node.nodeType == Node.DOCUMENT_NODE ||
-            node.nodeType == Node.DOCUMENT_FRAGMENT_NODE)
-    )
+    return node
+        && ((node.nodeType == Node.ELEMENT_NODE && inlineProps.indexOf(getComputedStyle(node).display) == -1)
+        || node.nodeType == Node.DOCUMENT_NODE
+        || node.nodeType == Node.DOCUMENT_FRAGMENT_NODE)
 }
 
 export function isInlineNode(node) {
-    return node && !isBlockNode(node)
+    return node
+        && !isBlockNode(node)
 }
 
 export function isEditingHost(node) {
-    return (
-        node &&
-        isHtmlElement(node) &&
-        (node.contentEditable == 'true' ||
-            (node.parentNode &&
-                node.parentNode.nodeType == Node.DOCUMENT_NODE &&
-                node.parentNode.designMode == 'on'))
-    )
+    return node
+        && isHtmlElement(node)
+        && (node.contentEditable == 'true'
+        || (node.parentNode
+        && node.parentNode.nodeType == Node.DOCUMENT_NODE
+        && node.parentNode.designMode == 'on'))
 }
 
 function isEditable(node) {
-    return (
-        node &&
-        !isEditingHost(node) &&
-        (node.nodeType != Node.ELEMENT_NODE ||
-            node.contentEditable != 'false') &&
-        (isEditingHost(node.parentNode) || isEditable(node.parentNode)) &&
-        (isHtmlElement(node) ||
-            (node.nodeType == Node.ELEMENT_NODE &&
-                node.namespaceURI == 'http://www.w3.org/2000/svg' &&
-                node.localName == 'svg') ||
-            (node.nodeType == Node.ELEMENT_NODE &&
-                node.namespaceURI == 'http://www.w3.org/1998/Math/MathML' &&
-                node.localName == 'math') ||
-            (node.nodeType != Node.ELEMENT_NODE &&
-                isHtmlElement(node.parentNode)))
-    )
+    return node
+        && !isEditingHost(node)
+        && (node.nodeType != Node.ELEMENT_NODE || node.contentEditable != 'false')
+        && (isEditingHost(node.parentNode) || isEditable(node.parentNode))
+        && (isHtmlElement(node)
+        || (node.nodeType == Node.ELEMENT_NODE && node.namespaceURI == 'http://www.w3.org/2000/svg' && node.localName == 'svg')
+        || (node.nodeType == Node.ELEMENT_NODE && node.namespaceURI == 'http://www.w3.org/1998/Math/MathML' && node.localName == 'math')
+        || (node.nodeType != Node.ELEMENT_NODE && isHtmlElement(node.parentNode)));
 }
 
 export function hasEditableDescendants(node) {
     for (let i = 0; i < node.childNodes.length; i++) {
-        if (
-            isEditable(node.childNodes[i]) ||
-            hasEditableDescendants(node.childNodes[i])
-        ) {
-            return true
+        if (isEditable(node.childNodes[i])
+        || hasEditableDescendants(node.childNodes[i])) {
+            return true;
         }
     }
-    return false
+    return false;
 }
 
 export function getEditingHostOf(node) {
@@ -126,10 +112,8 @@ export function getEditingHostOf(node) {
 }
 
 export function inSameEditingHost(node1, node2) {
-    return (
-        getEditingHostOf(node1) &&
-        getEditingHostOf(node1) == getEditingHostOf(node2)
-    )
+    return getEditingHostOf(node1)
+        && getEditingHostOf(node1) == getEditingHostOf(node2)
 }
 
 export function isCollapsedLineBreak(br) {
@@ -212,21 +196,20 @@ export function isExtraneousLineBreak(br) {
 }
 
 export function isWhitespaceNode(node) {
-    return (
-        node &&
-        node.nodeType == Node.TEXT_NODE &&
-        (node.data == '' ||
-            (/^[\t\n\r ]+$/.test(node.data) &&
-                node.parentNode &&
-                node.parentNode.nodeType == Node.ELEMENT_NODE &&
-                ['normal', 'nowrap'].indexOf(
-                    getComputedStyle(node.parentNode).whiteSpace
-                ) != -1) ||
-            (/^[\t\r ]+$/.test(node.data) &&
-                node.parentNode &&
-                node.parentNode.nodeType == Node.ELEMENT_NODE &&
-                getComputedStyle(node.parentNode).whiteSpace == 'pre-line'))
-    )
+    return node
+        && node.nodeType == Node.TEXT_NODE
+        && (node.data == ''
+        || (
+            /^[\t\n\r ]+$/.test(node.data)
+            && node.parentNode
+            && node.parentNode.nodeType == Node.ELEMENT_NODE
+            && ['normal', 'nowrap'].indexOf(getComputedStyle(node.parentNode).whiteSpace) != -1
+        ) || (
+            /^[\t\r ]+$/.test(node.data)
+            && node.parentNode
+            && node.parentNode.nodeType == Node.ELEMENT_NODE
+            && getComputedStyle(node.parentNode).whiteSpace == 'pre-line'
+        ))
 }
 
 function isCollapsedWhitespaceNode(node) {
@@ -244,18 +227,15 @@ function isCollapsedWhitespaceNode(node) {
         return true
     }
 
-    if (
-        getAncestors(node).some(function (ancestor) {
-            return (
-                ancestor.nodeType == Node.ELEMENT_NODE &&
-                getComputedStyle(ancestor).display == 'none'
-            )
-        })
-    ) {
+    if (getAncestors(node).some(function (ancestor) {
+        return ancestor.nodeType == Node.ELEMENT_NODE
+            && getComputedStyle(ancestor).display == 'none'
+    })) {
         return true
     }
 
-    while (!isBlockNode(ancestor) && ancestor.parentNode) {
+    while (!isBlockNode(ancestor)
+    && ancestor.parentNode) {
         ancestor = ancestor.parentNode
     }
 
@@ -264,15 +244,14 @@ function isCollapsedWhitespaceNode(node) {
     while (reference != ancestor) {
         reference = previousNode(reference)
 
-        if (isBlockNode(reference) || isHtmlElement(reference, 'br')) {
+        if (isBlockNode(reference)
+        || isHtmlElement(reference, 'br')) {
             return true
         }
 
-        if (
-            (reference.nodeType == Node.TEXT_NODE &&
-                !isWhitespaceNode(reference)) ||
-            isHtmlElement(reference, 'img')
-        ) {
+        if (reference.nodeType == Node.TEXT_NODE
+        && !isWhitespaceNode(reference)
+        || isHtmlElement(reference, 'img')) {
             break
         }
     }
@@ -283,15 +262,15 @@ function isCollapsedWhitespaceNode(node) {
     while (reference != stop) {
         reference = nextNode(reference)
 
-        if (isBlockNode(reference) || isHtmlElement(reference, 'br')) {
+        if (isBlockNode(reference)
+        || isHtmlElement(reference, 'br')) {
             return true
         }
 
-        if (
-            (reference &&
-                reference.nodeType == Node.TEXT_NODE &&
-                !isWhitespaceNode(reference)) ||
-            isHtmlElement(reference, 'img')
+        if (reference
+        && reference.nodeType == Node.TEXT_NODE
+        && !isWhitespaceNode(reference)
+        || isHtmlElement(reference, 'img')
         ) {
             break
         }
@@ -318,12 +297,10 @@ export function isVisible(node) {
         return false
     }
 
-    if (
-        isBlockNode(node) ||
-        (node.nodeType == Node.TEXT_NODE && !isCollapsedWhitespaceNode(node)) ||
-        isHtmlElement(node, 'img') ||
-        (isHtmlElement(node, 'br') && !isExtraneousLineBreak(node))
-    ) {
+    if (isBlockNode(node)
+    || (node.nodeType == Node.TEXT_NODE&& !isCollapsedWhitespaceNode(node))
+    || isHtmlElement(node, 'img')
+    || (isHtmlElement(node, 'br') && !isExtraneousLineBreak(node))) {
         return true
     }
 
@@ -351,9 +328,8 @@ export function isCollapsedBlockProp(node) {
 
     let hasCollapsedBlockPropChild = false
     for (let i = 0; i < node.childNodes.length; i++) {
-        if (
-            !isInvisible(node.childNodes[i]) &&
-            !isCollapsedBlockProp(node.childNodes[i])
+        if (!isInvisible(node.childNodes[i])
+        && !isCollapsedBlockProp(node.childNodes[i])
         ) {
             return false
         }
@@ -378,12 +354,11 @@ export function isHtmlElement(node, tags?) {
             return tag.toUpperCase()
         })
     }
-    return (
-        node &&
-        node.nodeType == Node.ELEMENT_NODE &&
-        isHtmlNamespace(node.namespaceURI) &&
-        (typeof tags == 'undefined' || tags.indexOf(node.tagName) != -1)
-    )
+    return node
+        && node.nodeType == Node.ELEMENT_NODE
+        && isHtmlNamespace(node.namespaceURI)
+        && (typeof tags == 'undefined' || tags.indexOf(node.tagName) != -1)
+
 }
 
 export function nextNode(node) {
@@ -411,39 +386,28 @@ export function previousNode(node) {
         }
         return node
     }
-    if (node.parentNode && node.parentNode.nodeType == Node.ELEMENT_NODE) {
+    if (node.parentNode
+    && node.parentNode.nodeType == Node.ELEMENT_NODE) {
         return node.parentNode
     }
     return null
 }
 
 export function isAncestor(ancestor, descendant) {
-    return (
-        ancestor &&
-        descendant &&
-        Boolean(
-            ancestor.compareDocumentPosition(descendant) &
-                Node.DOCUMENT_POSITION_CONTAINED_BY
-        )
-    )
+    return ancestor
+        && descendant
+        && Boolean(ancestor.compareDocumentPosition(descendant) & Node.DOCUMENT_POSITION_CONTAINED_BY)
 }
 
 export function isAncestorContainer(ancestor, descendant) {
-    return (
-        (ancestor || descendant) &&
-        (ancestor == descendant || isAncestor(ancestor, descendant))
-    )
+    return (ancestor || descendant)
+        && (ancestor == descendant || isAncestor(ancestor, descendant))
 }
 
 export function isDescendant(descendant, ancestor) {
-    return (
-        ancestor &&
-        descendant &&
-        Boolean(
-            ancestor.compareDocumentPosition(descendant) &
-                Node.DOCUMENT_POSITION_CONTAINED_BY
-        )
-    )
+    return ancestor
+        && descendant
+        && Boolean(ancestor.compareDocumentPosition(descendant) & Node.DOCUMENT_POSITION_CONTAINED_BY)
 }
 
 export function isBefore(node1, node2) {
@@ -453,18 +417,13 @@ export function isBefore(node1, node2) {
 }
 
 export function isAfter(node1, node2) {
-    return Boolean(
-        node1.compareDocumentPosition(node2) & Node.DOCUMENT_POSITION_PRECEDING
-    )
+    return Boolean(node1.compareDocumentPosition(node2) & Node.DOCUMENT_POSITION_FOLLOWING)
 }
 
 export function getAncestors(node, condition?: Function | null) {
     const ancestors = []
 
-    if (!condition)
-        condition = function (node) {
-            return true
-        }
+    if (!condition) condition = function (node) { return true }
 
     while (node.parentNode && condition(node)) {
         ancestors.unshift(node.parentNode)
@@ -490,7 +449,7 @@ export function getInclusiveDescendants(node) {
     return [node].concat(getDescendants(node))
 }
 
-function getDirectionality(element) {
+export function getDirectionality(element) {
     if (element.dir == 'ltr') {
         return 'ltr'
     }
