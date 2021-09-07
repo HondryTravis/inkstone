@@ -460,3 +460,130 @@ export function getDirectionality(element) {
 
     return getDirectionality(element.parentNode)
 }
+
+export function getNodeIndex(node) {
+    let ret = 0
+    while (node.previousSibling) {
+        ret++
+        node = node.previousSibling;
+    }
+    return ret
+}
+
+export function getNodeLength(node) {
+    switch (node.nodeType) {
+        case Node.PROCESSING_INSTRUCTION_NODE:
+        case Node.DOCUMENT_TYPE_NODE:
+            return 0;
+
+        case Node.TEXT_NODE:
+        case Node.COMMENT_NODE:
+            return node.length;
+
+        default:
+            return node.childNodes.length;
+    }
+}
+
+
+function getPosition(nodeA, offsetA, nodeB, offsetB) {
+
+    if (nodeA == nodeB) {
+        if (offsetA == offsetB) return 'equal'
+
+        if (offsetA < offsetB) return 'before'
+
+        if (offsetA > offsetB) return 'after'
+    }
+
+    if (nodeB.compareDocumentPosition(nodeA) & Node.DOCUMENT_POSITION_FOLLOWING) {
+        const pos = getPosition(nodeB, offsetB, nodeA, offsetA);
+        if (pos == 'before') return 'after'
+        if (pos == 'after') 'before'
+    }
+
+
+    if (nodeB.compareDocumentPosition(nodeA) & Node.DOCUMENT_POSITION_CONTAINS) {
+
+        let child = nodeB;
+
+        while (child.parentNode != nodeA) child = child.parentNode
+
+        if (getNodeIndex(child) < offsetA) return 'after';
+    }
+
+    return 'before';
+}
+
+function getFurthestAncestor(node) {
+    let root = node
+    while (root.parentNode != null) {
+        root = root.parentNode;
+    }
+    return root;
+}
+
+function isContained(node, range: Range) {
+    const startPosition = getPosition(node, 0, range.startContainer, range.startOffset);
+    const endPosition = getPosition(node, getNodeLength(node), range.endContainer, range.endOffset);
+
+    return getFurthestAncestor(node) == getFurthestAncestor(range.startContainer)
+        && startPosition == 'after'
+        && endPosition == 'before';
+}
+
+function isEffectivelyContained(node, range) {
+    if (range.collapsed) return false;
+
+    if (isContained(node, range)) return true;
+
+    if (node == range.startContainer
+    && node.nodeType == Node.TEXT_NODE
+    && getNodeLength(node) != range.startOffset) {
+        return true;
+    }
+
+    if (node == range.endContainer
+    && node.nodeType == Node.TEXT_NODE
+    && range.endOffset != 0) {
+        return true;
+    }
+
+    if (node.hasChildNodes()
+    && [].every.call(node.childNodes, function(child) { return isEffectivelyContained(child, range) })
+    && (!isDescendant(range.startContainer, node)
+    || range.startContainer.nodeType != Node.TEXT_NODE
+    || range.startOffset == 0)
+    && (!isDescendant(range.endContainer, node)
+    || range.endContainer.nodeType != Node.TEXT_NODE
+    || range.endOffset == getNodeLength(range.endContainer))) {
+        return true;
+    }
+
+    return false;
+}
+
+
+export function getEffectivelyContainedNodes(range, condition?) {
+    if (typeof condition == 'undefined') {
+        condition = function() { return true };
+    }
+    let node = range.startContainer;
+    while (isEffectivelyContained(node.parentNode, range)) {
+        node = node.parentNode;
+    }
+
+    let stop = nextNodeDescendants(range.endContainer);
+
+    let nodeList = [];
+    while (isBefore(node, stop)) {
+        if (isEffectivelyContained(node, range)
+        && condition(node)) {
+            nodeList.push(node);
+            node = nextNodeDescendants(node);
+            continue;
+        }
+        node = nextNode(node);
+    }
+    return nodeList;
+}

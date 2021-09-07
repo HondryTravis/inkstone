@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        div[contenteditable=true] {
+            min-height:100px;
+            border: 1px solid #444;
+            outline: none;
+            border-radius: 5px;
+            padding: 10px;
+        }
+        div[contenteditable=true]:empty::after {
+            content: attr(placeholder);
+            color: #555;
+        }
+        span.Selected {
+            background-color: red;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <h1>Selection Test</h1>
+    <div id="editor-wrapper">
+        <p>附件爱<span style="font-weight: bold;">迪生开发撒放假卡了撒</span>就发拉克丝的接发撒发<span>&nbsp;</span></p>
+        <p>附件爱迪生开发撒放假卡了撒就发拉克丝的接发撒发</p>
+        <p>附件爱迪生开发撒<span style="font-weight: bold;">放假卡了</span>撒就发拉克丝的接发撒发<span>&nbsp;</span></p>
+    </div>
+    <h2>使用自定义的 HTML</h2>
+    <div contenteditable="true" placeholder="请输入html"></div>
+    <div>
+        <button>确定生成 Test HTML</button>
+    </div>
+</body>
+<script type="module">
+import Core from '../dist/core.es.js'
+// test
+window.$c = Core()
+window.$s = $c.Selection({
+    options: {
+        selector: '#editor-wrapper'
+    }
+})
+
+
+const button = document.querySelector('button')
+const wrapper = document.querySelector('#editor-wrapper')
+const input = document.querySelector('div[contenteditable=true]')
+
+button.addEventListener('click', function() {
+    wrapper.innerHTML = input.innerText
+})
+</script>
+</html>
