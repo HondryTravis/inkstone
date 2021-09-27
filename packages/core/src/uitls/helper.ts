@@ -1,26 +1,42 @@
-export function debounce(fn: Function, wait: number = 400) {
+export function debounce(callback: Function, wait: number = 400) {
     let timer: NodeJS.Timeout, context: Function;
-    return function (...args: any[]) {
-        timer && clearTimeout(timer);
+
+    const internalTimeoutCallback = function (...args: any[]) {
+        clearTimeout(timer);
         context = this
         timer = setTimeout(() => {
-            fn.apply(context, args);
+            callback.apply(context, args);
             context = null;
         }, wait);
-    };
+    }
+
+    internalTimeoutCallback.cancel = function () {
+        clearTimeout(timer)
+        context = timer = null;
+    }
+
+    return internalTimeoutCallback
 }
 
-export function throttle(fn: Function, wait: number = 400) {
+export function throttle(callback: Function, wait: number = 400) {
     let timer: NodeJS.Timeout, context: Function;
-    return function (...args: any[]) {
+
+    const internalTimeoutCallback = function (...args: any[]) {
         context = this
-        if (timer) return;
+        if (timer) return false;
         timer = setTimeout(() => {
-            fn.apply(context, args);
+            callback.apply(context, args);
             clearTimeout(timer);
             context = timer = null;
         }, wait)
     }
+
+    internalTimeoutCallback.cancel = function () {
+        clearTimeout(timer)
+        context = timer = null;
+    }
+
+    return internalTimeoutCallback
 }
 
 

@@ -1,10 +1,18 @@
-import { debounce, getNodeLength, getEffectivelyContainedNodes, getKeysOf } from '../uitls/index'
-import Settings from './settings'
+import {
+    debounce,
+    getNodeLength,
+    getEffectivelyContainedNodes,
+    getAllEffectivelyContainedNodes,
+    getKeysOf,
+    isContainedNode
+} from '../uitls/index'
 
+import Settings from './settings'
 
 interface ISelectionArgsOptions {
     setup: (...args) => void;
     selector: string;
+    settings: object
 }
 
 interface ISelectionArgs {
@@ -30,12 +38,16 @@ export function NativeSelection(args: Partial<ISelectionArgs>) {
         ...args
     }
 
+    const settings = {
+        ...Settings,
+        ...args.options?.settings
+    }
+
+    const { tag, props } = settings.defaultSelectionWrapperOptions
+
     const proxyNode = ownDoc.querySelector(selector)
 
-    console.log(proxyNode);
-
     let markState = false
-
 
     const cache: Partial<ISelectionCache> = { selected: [] }
 
@@ -59,11 +71,13 @@ export function NativeSelection(args: Partial<ISelectionArgs>) {
 
 
     // 修复选区
-    const correctRange = (range?: Range) => {
-        // range = range.cloneRange()
+    const correctRange = (range: Range) => {
+
         cache.oldRange = range.cloneRange()
+        // range = range.cloneRange()
+
+        console.log(['range', range]);
         // 修正开始节点是 Text 节点时候，要对文字进行断开处理
-        console.log(['isEqualNode', range]);
         if (range.startContainer.nodeType === Node.TEXT_NODE
         && range.startOffset !== 0
         && range.startOffset !== getNodeLength(range.startContainer)) {
@@ -71,8 +85,10 @@ export function NativeSelection(args: Partial<ISelectionArgs>) {
             let newNode;
             if (range.startContainer.isEqualNode(range.endContainer)) {
                 let newEndOffset = range.endOffset - range.startOffset;
+
                 newNode = (range.startContainer as Text).splitText(range.startOffset);
                 newActiveRange.setEnd(newNode, newEndOffset);
+
                 range.setEnd(newNode, newEndOffset);
             } else {
                 newNode = (range.startContainer as Text).splitText(range.startOffset);
@@ -103,8 +119,11 @@ export function NativeSelection(args: Partial<ISelectionArgs>) {
         }
     }
 
+    // 移除标记
     const removeMark = () => {
+
         while (cache.selected.length) {
+            console.log('removeMark')
             const node = cache.selected.shift();
             const parentNode = node.parentNode;
             const child = node.childNodes[0]
@@ -112,30 +131,28 @@ export function NativeSelection(args: Partial<ISelectionArgs>) {
             node.remove()
             parentNode.normalize()
         }
+        console.log(['cache.selected', cache.selected])
     }
 
     // 标记选区
-    const mark = (range: Range) => {
-        correctRange(range)
+    const mark = () => {
+        correctRange(getActiveRange())
 
-        const texts = getEffectivelyContainedNodes(getActiveRange(), function(node) {
+        const texts = getEffectivelyContainedNodes(getActiveRange() ,function(node) {
             return node.nodeType == Node.TEXT_NODE
         })
 
-        console.log(texts)
-
-        const { defaultSelectionWrapperOptions: { tag, props } } = Settings
+        if (!texts.every( node => isContainedNode(proxyNode, node))) return false
 
         for (const text of texts) {
             const textParent = text.parentNode as Element
             const node = ownDoc.createElement(tag)
-            node.appendChild(text.cloneNode(true))
 
             if (getKeysOf(props).length) {
                 for (const key in props) node.setAttribute(key, props[key])
             }
-            textParent.replaceChild(node, text)
-
+            textParent.insertBefore(node, text)
+            node.appendChild(text)
             cache.selected.push(node)
         }
         if (!cache.selected.length) return false
@@ -153,16 +170,27 @@ export function NativeSelection(args: Partial<ISelectionArgs>) {
     }
 
     const setup = () => {
-        // editor.fire('SeletionInit')
-
         const markSelection = function(evt: Event) {
-            mark(getActiveRange())
+            mark()
         }
+
         const removeMarkInSelection = function(evt: Event) {
+            const oldSelection = getSelection()
+            if (oldSelection.isCollapsed == false) oldSelection.collapseToEnd()
             removeMark()
         }
         proxyNode.addEventListener('mouseup', markSelection)
         proxyNode.addEventListener('mousedown', removeMarkInSelection)
+    }
+
+    const getSelectedNodes = function(callback: Function) {
+        if (!callback) {
+            callback = (node: Element & Node) => {
+                return node.nodeType === Node.ELEMENT_NODE
+                    && node.classList.contains(props.class)
+            }
+        }
+        return getAllEffectivelyContainedNodes(getActiveRange(), callback)
     }
 
     setup()
@@ -171,6 +199,7 @@ export function NativeSelection(args: Partial<ISelectionArgs>) {
         get cache() { return cache },
         getSelection,
         getActiveRange,
+        getSelectedNodes,
         mark
     }
 }

@@ -278,9 +278,7 @@ function isCollapsedWhitespaceNode(node) {
 }
 
 export function isVisible(node) {
-    if (!node) {
-        return false
-    }
+    if (!node) return false
 
     if (
         getAncestors(node)
@@ -303,9 +301,7 @@ export function isVisible(node) {
     }
 
     for (let i = 0; i < node.childNodes.length; i++) {
-        if (isVisible(node.childNodes[i])) {
-            return true
-        }
+        if (isVisible(node.childNodes[i])) return true
     }
 
     return false
@@ -408,12 +404,12 @@ export function isDescendant(descendant, ancestor) {
         && Boolean(ancestor.compareDocumentPosition(descendant) & Node.DOCUMENT_POSITION_CONTAINED_BY)
 }
 
-export function isBefore(node1, node2) {
+export function isBefore(node1: Node, node2: Node) {
     return Boolean(node1.compareDocumentPosition(node2) & Node.DOCUMENT_POSITION_FOLLOWING)
 }
 
-export function isAfter(node1, node2) {
-    return Boolean(node1.compareDocumentPosition(node2) & Node.DOCUMENT_POSITION_FOLLOWING)
+export function isAfter(node1: Node, node2: Node) {
+    return Boolean(node1.compareDocumentPosition(node2) & Node.DOCUMENT_POSITION_PRECEDING)
 }
 
 export function getAncestors(node, condition?: Function | null) {
@@ -428,11 +424,11 @@ export function getAncestors(node, condition?: Function | null) {
     return ancestors
 }
 
-export function getInclusiveAncestors(node, condition?) {
+export function getInclusiveAncestors(node: Node, condition?: Function) {
     return getAncestors(node, condition).concat(node)
 }
 
-export function getDescendants(node) {
+export function getDescendants(node: Node) {
     const descendants = []
     let stop = nextNodeDescendants(node)
     while ((node = nextNode(node)) && node != stop) {
@@ -461,6 +457,13 @@ export function getDirectionality(element) {
     return getDirectionality(element.parentNode)
 }
 
+export function getBlockNodeOf(node) {
+    while (isInlineNode(node)) {
+        node = node.parentNode;
+    }
+    return node;
+}
+
 export function getNodeIndex(node) {
     let ret = 0
     while (node.previousSibling) {
@@ -486,7 +489,7 @@ export function getNodeLength(node) {
 }
 
 
-function getPosition(nodeA, offsetA, nodeB, offsetB) {
+function getPosition(nodeA: Node, offsetA: number, nodeB: Node, offsetB: number): string {
 
     if (nodeA == nodeB) {
         if (offsetA == offsetB) return 'equal'
@@ -515,15 +518,17 @@ function getPosition(nodeA, offsetA, nodeB, offsetB) {
     return 'before';
 }
 
+// 获得最远的祖先节点
 function getFurthestAncestor(node) {
     let root = node
-    while (root.parentNode != null) {
+    while (root.parentNode) {
         root = root.parentNode;
     }
     return root;
 }
 
-function isContained(node, range: Range) {
+// 被包含定义为在开始节点之后，在结束节点之前，就认为被包含
+function isContained(node: Node, range: Range) {
     const startPosition = getPosition(node, 0, range.startContainer, range.startOffset);
     const endPosition = getPosition(node, getNodeLength(node), range.endContainer, range.endOffset);
 
@@ -532,7 +537,12 @@ function isContained(node, range: Range) {
         && endPosition == 'before';
 }
 
-function isEffectivelyContained(node, range) {
+export function isContainedNode(node: Node, otherNode: Node) {
+    return node.contains(otherNode)
+}
+
+// 是否有效被包含
+function isEffectivelyContained(node: Node, range: Range) {
     if (range.collapsed) return false;
 
     if (isContained(node, range)) return true;
@@ -550,38 +560,70 @@ function isEffectivelyContained(node, range) {
     }
 
     if (node.hasChildNodes()
-    && [].every.call(node.childNodes, function(child) { return isEffectivelyContained(child, range) })
+    && [].every.call(node.childNodes, (child: Node) => isEffectivelyContained(child, range))
     && (!isDescendant(range.startContainer, node)
-    || range.startContainer.nodeType != Node.TEXT_NODE
-    || range.startOffset == 0)
+        || range.startContainer.nodeType != Node.TEXT_NODE
+        || range.startOffset == 0)
     && (!isDescendant(range.endContainer, node)
-    || range.endContainer.nodeType != Node.TEXT_NODE
-    || range.endOffset == getNodeLength(range.endContainer))) {
+        || range.endContainer.nodeType != Node.TEXT_NODE
+        || range.endOffset == getNodeLength(range.endContainer)
+        )
+    ) {
         return true;
     }
 
     return false;
 }
 
-
-export function getEffectivelyContainedNodes(range, condition?) {
+// 与 get(All)ContainedNodes() 类似，但用于有效包含的节点 不包含 TextNode
+export function getEffectivelyContainedNodes(range: Range, condition?: Function) {
     if (typeof condition == 'undefined') {
         condition = function() { return true };
     }
+    let node = range.startContainer
+
+    while (isEffectivelyContained(node.parentNode, range)) {
+        node = node.parentNode
+    }
+
+    // 获得选区结束的下个节点
+    let stop = nextNodeDescendants(range.endContainer);
+
+    const nodeList = []
+    while (isBefore(node, stop)) {
+        if (isEffectivelyContained(node, range)
+        && condition(node)) {
+            nodeList.push(node)
+            node = nextNodeDescendants(node)
+            continue;
+        }
+        node = nextNode(node);
+    }
+    return nodeList;
+}
+
+export function getAllEffectivelyContainedNodes(range: Range, condition?: Function) {
+    if (typeof condition == 'undefined') {
+        condition = function() { return true };
+    }
+
+    // 获得开始节点的最顶层被包裹在选区范围内的节点
     let node = range.startContainer;
     while (isEffectivelyContained(node.parentNode, range)) {
         node = node.parentNode;
     }
 
+    // 获得选区结束的下个节点
     let stop = nextNodeDescendants(range.endContainer);
 
-    let nodeList = [];
+    // 开始对节点进行读取，进行树深度前序遍历得到选中的 list
+    const nodeList = [];
     while (isBefore(node, stop)) {
+        // 判断是否当前节点被有效包含，因为会存在范围溢出的情况
+        // condition 对当前节点进行判断，默认会选中所有节点
         if (isEffectivelyContained(node, range)
         && condition(node)) {
             nodeList.push(node);
-            node = nextNodeDescendants(node);
-            continue;
         }
         node = nextNode(node);
     }
