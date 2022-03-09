@@ -47,8 +47,6 @@ export function NativeSelection(args: Partial<ISelectionArgs>) {
 
     const proxyNode = ownDoc.querySelector(selector)
 
-    let markState = false
-
     const cache: Partial<ISelectionCache> = { selected: [] }
 
     const getSelection = (): Selection => {
@@ -131,14 +129,13 @@ export function NativeSelection(args: Partial<ISelectionArgs>) {
             node.remove()
             parentNode.normalize()
         }
-        console.log(['cache.selected', cache.selected])
     }
 
     // 标记选区
     const mark = () => {
         correctRange(getActiveRange())
 
-        const texts = getEffectivelyContainedNodes(getActiveRange() ,function(node) {
+        const texts = getAllEffectivelyContainedNodes(getActiveRange() ,function(node) {
             return node.nodeType == Node.TEXT_NODE
         })
 
@@ -179,6 +176,7 @@ export function NativeSelection(args: Partial<ISelectionArgs>) {
             if (oldSelection.isCollapsed == false) oldSelection.collapseToEnd()
             removeMark()
         }
+
         proxyNode.addEventListener('mouseup', markSelection)
         proxyNode.addEventListener('mousedown', removeMarkInSelection)
     }
@@ -200,7 +198,8 @@ export function NativeSelection(args: Partial<ISelectionArgs>) {
         getSelection,
         getActiveRange,
         getSelectedNodes,
-        mark
+        mark,
+        removeMark
     }
 }
 

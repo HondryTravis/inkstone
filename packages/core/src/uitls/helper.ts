@@ -48,3 +48,11 @@ export function hasKey(obj: object, key: PropertyKey) {
 export function getKeysOf(obj: object) {
     return Reflect.ownKeys(obj) || Object.keys(obj)
 }
+
+export function getValuesOf(obj: object) {
+    return Object.values(obj)
+}
+
+export function setPropsOf(obj: object, props: PropertyKey, values: any, receiver?: any) {
+    return Reflect.set(obj, props, values, receiver)
+}
